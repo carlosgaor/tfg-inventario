@@ -1,0 +1,255 @@
+﻿@page "/usuarios"
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3>Usuarios</h3>
+<p class="page-subtitle">Administra cuentas, roles, activación y restablecimiento de contraseñas.</p>
+
+@if (cargando)
+{
+    <div class="d-flex justify-content-center mt-4">
+        <div class="spinner-border text-primary"></div>
+    </div>
+}
+else if (role != "Admin")
+{
+    <div class="alert alert-warning">Solo Admin puede gestionar usuarios.</div>
+}
+else
+{
+    <div class="card p-3 mb-3">
+        <h5>Crear usuario</h5>
+
+        <div class="row">
+            <div class="col-md-3 mb-2">
+                <label>Nombre</label>
+                <input class="form-control" @bind="nuevoNombre" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <label>Email</label>
+                <input class="form-control" @bind="nuevoEmail" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <label>Password</label>
+                <input class="form-control" type="password" @bind="nuevoPassword" />
+            </div>
+            <div class="col-md-3 mb-2">
+                <label>Rol</label>
+                <select class="form-select" @bind="nuevoRol">
+                    <option value="Empleado">Empleado</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn btn-primary mt-2" @onclick="Crear">Crear</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(mensaje))
+    {
+        <div class="alert @(mensaje.StartsWith("Error") ? "alert-danger" : "alert-success")">
+            @mensaje
+        </div>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Activo</th>
+                <th style="width: 320px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in usuarios)
+            {
+                <tr class="@(u.Activo ? "" : "table-secondary")">
+                    <td>@u.Email</td>
+                    <td>@u.Nombre</td>
+                    <td>                        
+                        <select class="form-select form-select-sm"
+                        @bind="u.Rol"
+                        @bind:after="async () => await CambiarRol(u)">
+                        <option value="Empleado">Empleado</option>
+                        <option value="Admin">Admin</option>
+                        </select>                        
+                    </td>
+
+                    <td>
+                        <span class="status-badge @(u.Activo ? "status-active" : "status-inactive")">
+                        @(u.Activo ? "Activo" : "Inactivo") </span>
+                    </td>
+
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary me-2"
+                                @onclick="() => ToggleActivo(u)">
+                            @(u.Activo ? "Desactivar" : "Activar")
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="() => AbrirReset(u)">
+                            Reset Password
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (showReset)
+    {
+        <div class="card p-3 mt-3">
+            <h5>Reset password: @resetUserEmail</h5>
+
+            <input class="form-control" type="password" placeholder="Nueva contraseña"
+                   @bind="resetPassword" />
+
+            <div class="mt-2">
+                <button class="btn btn-danger me-2" @onclick="ConfirmarReset">Confirmar</button>
+                <button class="btn btn-secondary" @onclick="CerrarReset">Cancelar</button>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    bool cargando = true;
+    string? role;
+
+    List<ApiService.UsuarioDto> usuarios = new();
+    string? mensaje;
+
+    // crear
+    string nuevoNombre = "";
+    string nuevoEmail = "";
+    string nuevoPassword = "";
+    string nuevoRol = "Empleado";
+
+    // reiniciar
+    bool showReset = false;
+    int resetUserId;
+    string resetUserEmail = "";
+    string resetPassword = "";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var ok = await Api.TryLoadTokenAsync();
+        if (!ok) { Nav.NavigateTo("/login"); return; }
+
+        role = await Api.GetRoleAsync();
+
+        if (role == "Admin")
+        {
+            await Cargar();
+        }
+
+        cargando = false;
+    }
+
+    async Task Cargar()
+    {
+        try
+        {
+            mensaje = null;
+            usuarios = await Api.GetUsuariosAsync();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error cargando usuarios: {ex.Message}";
+            usuarios = new();
+        }
+    }
+
+    async Task Crear()
+    {
+        mensaje = null;
+
+        if (string.IsNullOrWhiteSpace(nuevoNombre) ||
+            string.IsNullOrWhiteSpace(nuevoEmail) ||
+            string.IsNullOrWhiteSpace(nuevoPassword))
+        {
+            mensaje = "Error: Nombre/Email/Password obligatorios.";
+            return;
+        }
+
+        var res = await Api.CrearUsuarioAsync(new ApiService.CreateUsuarioRequest(
+            nuevoNombre, nuevoEmail, nuevoPassword, nuevoRol));
+
+        if (!res.Success)
+        {
+            mensaje = $"Error creando usuario: {res.Error}";
+            return;
+        }
+
+        mensaje = "Usuario creado ✅";
+        nuevoNombre = nuevoEmail = nuevoPassword = "";
+        nuevoRol = "Empleado";
+
+        await Cargar();
+    }
+
+    async Task ToggleActivo(ApiService.UsuarioDto u)
+    {
+        mensaje = null;
+
+        var confirm = await JS.InvokeAsync<bool>("confirm",
+            u.Activo ? "¿Desactivar este usuario?" : "¿Activar este usuario?");
+        if (!confirm) return;
+
+        var res = await Api.SetUsuarioActivoAsync(u.IdUsuario, !u.Activo);
+        mensaje = res.Success ? "Estado actualizado ✅" : $"Error: {res.Error}";
+
+        await Cargar();
+    }
+
+    async Task CambiarRol(ApiService.UsuarioDto u)
+    {
+        mensaje = null;
+
+        var res = await Api.SetUserRoleAsync(u.IdUsuario, u.Rol);
+        mensaje = res.Success ? "Rol actualizado ✅" : $"Error: {res.Error}";
+
+        await Cargar();
+    }
+
+    void AbrirReset(ApiService.UsuarioDto u)
+    {
+        showReset = true;
+        resetUserId = u.IdUsuario;
+        resetUserEmail = u.Email;
+        resetPassword = "";
+        mensaje = null;
+    }
+
+    void CerrarReset()
+    {
+        showReset = false;
+        resetPassword = "";
+    }
+
+    async Task ConfirmarReset()
+    {
+        mensaje = null;
+
+        if (string.IsNullOrWhiteSpace(resetPassword) || resetPassword.Length < 6)
+        {
+            mensaje = "Error: la contraseña debe tener mínimo 6 caracteres.";
+            return;
+        }
+
+        var confirm = await JS.InvokeAsync<bool>("confirm",
+            $"¿Resetear password de {resetUserEmail}?");
+        if (!confirm) return;
+
+        var res = await Api.ResetPasswordAsync(resetUserId, resetPassword);
+        mensaje = res.Success ? "Password actualizado ✅" : $"Error: {res.Error}";
+
+        showReset = false;
+        resetPassword = "";
+
+        await Cargar();
+    }
+}

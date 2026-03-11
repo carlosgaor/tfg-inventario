@@ -1,0 +1,313 @@
+﻿@page "/productos"
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3>Productos</h3>
+<p class="page-subtitle">Consulta, crea, edita y controla el stock mínimo de los productos.</p>
+
+@if (cargando)
+{
+    <p>Cargando...</p>
+}
+else
+{
+<div class="table-card">
+
+    <div class="table-toolbar">
+        <div>
+            @if (role == "Admin")
+            {
+                <button class="btn btn-primary" @onclick="Nuevo">Nuevo producto</button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(mensaje))
+    {
+        <div class="alert @(mensaje.Contains("Error") ? "alert-danger" : "alert-success")">
+            @mensaje
+        </div>
+    }
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label>Buscar por nombre</label>
+            <input class="form-control" placeholder="Escribe para filtrar..."
+                   @bind="filtroNombre" @bind:event="oninput" />
+        </div>
+
+        <div class="col-md-6">
+            <label>Categoría</label>
+            <select class="form-select" @bind="filtroCategoria">
+                <option value="0">Todas</option>
+                @foreach (var c in categorias)
+                {
+                    <option value="@c.IdCategoria">@c.Nombre</option>
+                }
+            </select>
+        </div>
+    </div>
+
+  <div class="table-card">  
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Código</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                    @if (role == "Admin")
+                    {
+                        <th>Acciones</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in productosPagina)
+                {
+                    <tr class="@(p.StockActual < p.StockMinimo ? "table-warning" : "")">
+                        <td>@p.IdProducto</td>
+                        <td>@p.Nombre</td>
+                        <td>@GetCategoriaNombre(p.IdCategoria)</td>
+                        <td>@p.Codigo</td>
+                        <td>
+                            @p.StockActual
+                            @if (p.StockActual < p.StockMinimo)
+                            {
+                                <span class="badge bg-warning text-dark ms-2">Stock bajo</span>
+                            }
+                        </td>
+                        <td>@p.StockMinimo</td>
+
+                        @if (role == "Admin")
+                        {
+                            <td>
+
+                                @if (p.StockActual < p.StockMinimo)
+                                {
+                                    <button class="btn btn-sm btn-outline-success me-2" @onclick="() => Reponer(p)">
+                                        Reponer
+                                    </button>
+                                }
+                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => Editar(p)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => Desactivar(p.IdProducto)">Desactivar</button>
+                            </td>                                            
+                        }
+                    </tr>
+                }
+        
+            </tbody>
+        </table>
+    </div>
+</div>
+}
+
+@if (mostrarForm && role == "Admin")
+{
+    <div class="section-card">
+        <h5 class="section-title">@(editando ? "Editar producto" : "Nuevo producto")</h5>
+        <div class="mb-2">
+            <label>Nombre</label>
+            <input class="form-control" @bind="formNombre" />
+        </div>
+
+        <div class="mb-2">
+            <label>Categoría</label>
+            <select class="form-select" @bind="formIdCategoria">
+                @foreach (var c in categorias)
+                {
+                    <option value="@c.IdCategoria">@c.Nombre</option>
+                }
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label>Código (opcional)</label>
+            <input class="form-control" @bind="formCodigo" />
+        </div>
+
+        <div class="mb-2">
+            <label>Stock mínimo</label>
+            <input class="form-control" type="number" min="0" @bind="formStockMinimo" />
+        </div>
+
+        @if (editando)
+        {
+            <div class="mb-2">
+                <label>Activo</label>
+                <select class="form-select" @bind="formActivo">
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+        }
+
+        <div class="mt-2">
+            <button class="btn btn-success me-2" @onclick="Guardar">Guardar</button>
+            <button class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+        </div>
+    </div>
+}
+
+@code {
+
+    int pagina = 1;
+    int tamPagina = 10;
+    string filtroNombre = "";
+    int filtroCategoria = 0;
+
+    bool cargando = true;
+    string? role;
+
+    List<ApiService.ProductoDto> productos = new();
+    List<ApiService.CategoriaDto> categorias = new();
+
+    string? mensaje;
+
+    bool mostrarForm = false;
+    bool editando = false;
+    int editId;
+
+    string formNombre = "";
+    int formIdCategoria;
+    string? formCodigo;
+    int formStockMinimo = 0;
+    bool formActivo = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ok = await Api.TryLoadTokenAsync();
+        if (!ok)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        role = await Api.GetRoleAsync();
+
+        await CargarTodo();
+        cargando = false;
+    }
+
+    async Task CargarTodo()
+    {
+        productos = await Api.GetProductosAsync();
+        categorias = await Api.GetCategoriasAsync();
+
+        if (categorias.Count > 0 && formIdCategoria == 0)
+            formIdCategoria = categorias[0].IdCategoria;
+    }
+    string GetCategoriaNombre(int idCategoria)
+    {
+        var c = categorias.FirstOrDefault(x => x.IdCategoria == idCategoria);
+        return c?.Nombre ?? "-";
+    }
+    void Nuevo()
+    {
+        mensaje = null;
+        mostrarForm = true;
+        editando = false;
+        editId = 0;
+
+        formNombre = "";
+        formCodigo = null;
+        formStockMinimo = 0;
+        formActivo = true;
+
+        if (categorias.Count > 0)
+            formIdCategoria = categorias[0].IdCategoria;
+    }
+    void Editar(ApiService.ProductoDto p)
+    {
+        mensaje = null;
+        mostrarForm = true;
+        editando = true;
+        editId = p.IdProducto;
+
+        formNombre = p.Nombre;
+        formIdCategoria = p.IdCategoria;
+        formCodigo = p.Codigo;
+        formStockMinimo = p.StockMinimo;
+        formActivo = p.Activo;
+    }
+    async Task Guardar()
+    {
+        mensaje = null;
+
+        if (string.IsNullOrWhiteSpace(formNombre))
+        {
+            mensaje = "Nombre obligatorio.";
+            return;
+        }
+
+        if (!editando)
+        {
+            var ok = await Api.CrearProductoAsync(
+                new ApiService.CreateProductoUiRequest(formNombre, formIdCategoria, formCodigo, formStockMinimo));
+
+            mensaje = ok ? "Producto creado ✅" : "Error creando producto ❌";
+        }
+        else
+        {
+            var ok = await Api.EditarProductoAsync(editId,
+                new ApiService.UpdateProductoUiRequest(formNombre, formIdCategoria, formCodigo, formStockMinimo, formActivo));
+
+            mensaje = ok ? "Producto actualizado ✅" : "Error actualizando producto ❌";
+        }
+
+        await CargarTodo();
+        mostrarForm = false;
+    }
+    async Task Desactivar(int idProducto)
+    {
+       
+        mensaje = null;
+
+        var confirmar = await JS.InvokeAsync<bool>("confirm",
+            "¿Seguro que quieres desactivar este producto?");
+
+        if (!confirmar)
+            return;
+
+        var ok = await Api.DesactivarProductoAsync(idProducto);
+        mensaje = ok ? "Producto desactivado correctamente." : "Error al desactivar producto.";
+
+        await CargarTodo();
+    }
+    async Task Reponer(ApiService.ProductoDto p)
+    {
+        mensaje = null;
+
+        var cantidad = (p.StockMinimo - p.StockActual) + 5;
+        if (cantidad < 1) cantidad = 1;
+
+        var idOrden = await Api.ReponerProductoAsync(p.IdProducto, cantidad);
+
+        if (idOrden is null)
+        {
+            mensaje = "Error creando orden de reposición ❌";
+            return;
+        }
+
+        mensaje = $"Orden #{idOrden} creada para reponer ✅";
+        Nav.NavigateTo($"/ordenes/{idOrden}");
+    }
+    void Cancelar()
+    {
+        mostrarForm = false;
+    }
+
+    IEnumerable<ApiService.ProductoDto> productosFiltrados =>
+    productos.Where(p =>
+        (string.IsNullOrWhiteSpace(filtroNombre) ||
+         p.Nombre.Contains(filtroNombre, StringComparison.OrdinalIgnoreCase)) &&
+        (filtroCategoria == 0 || p.IdCategoria == filtroCategoria)                
+    );
+    IEnumerable<ApiService.ProductoDto> productosPagina =>
+    productosFiltrados
+        .Skip((pagina - 1) * tamPagina)
+        .Take(tamPagina);
+}

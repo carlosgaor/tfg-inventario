@@ -1,0 +1,61 @@
+﻿@inherits LayoutComponentBase
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+
+<div class="app-shell">
+    <aside class="sidebar-shell">
+        <NavMenu />
+    </aside>
+
+    <main class="main-shell">
+        <header class="topbar">
+            <div>
+                <h1 class="topbar-title">Inventario Pro</h1>
+                <p class="topbar-subtitle">Panel de gestión empresarial</p>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(email))
+            {
+                <div class="topbar-user">
+                    <div class="user-chip">
+                        <div class="user-avatar">
+                            @email.Substring(0, 1).ToUpper()
+                        </div>
+                        <div>
+                            <div class="user-email">@email</div>
+                            <div class="user-role">@role</div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-danger" @onclick="DoLogout">
+                        Logout
+                    </button>
+                </div>
+            }
+        </header>
+
+        <section class="content-shell">
+            @Body
+        </section>
+    </main>
+</div>
+
+@code {
+    string? role;
+    string? email;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Api.TryLoadTokenAsync();
+        role = await Api.GetRoleAsync();
+        email = await Api.GetEmailAsync();
+        StateHasChanged();
+    }
+
+    async Task DoLogout()
+    {
+        await Api.LogoutAsync();
+        Nav.NavigateTo("/login", true);
+    }
+}

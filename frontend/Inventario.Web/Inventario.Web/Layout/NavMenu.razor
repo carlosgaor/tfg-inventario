@@ -1,0 +1,105 @@
+﻿@inject Inventario.Web.Services.ApiService Api
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Inventario.Web</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <div class="sidebar-brand">
+        <div class="brand-icon">IP</div>
+        <div>
+            <div class="brand-title">Inventario Pro</div>
+            <div class="brand-subtitle">Gestión DAM</div>
+        </div>
+    </div>
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        
+        @if (string.IsNullOrWhiteSpace(role))
+        {
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    Login
+                </NavLink>
+            </li>
+        }
+        else
+        {
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="productos">
+                    Productos
+                </NavLink>
+            </li>
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="movimientos">
+                    Movimientos
+                </NavLink>
+            </li>
+
+            @if (role == "Admin")
+            {
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="ordenes">
+                        Órdenes
+                    </NavLink>
+                </li>
+
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="informes">
+                        Informes
+                    </NavLink>
+                </li>
+
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="categorias">
+                        Categorías
+                    </NavLink>
+                </li>
+
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="usuarios">
+                        Usuarios
+                    </NavLink>
+                </li>
+            }
+
+            <div class="px-3 mt-3">
+                <small>Rol: <b>@role</b></small>
+            </div>
+        }
+
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
+
+@code {
+    string? role;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await Api.TryLoadTokenAsync();
+        role = await Api.GetRoleAsync();
+        StateHasChanged();
+    }
+}

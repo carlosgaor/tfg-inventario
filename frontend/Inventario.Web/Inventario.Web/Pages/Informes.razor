@@ -1,0 +1,132 @@
+﻿@page "/informes"
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3>Informes</h3>
+
+@if (cargando)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <h5>Stock bajo</h5>
+
+    @if (stockBajo.Count == 0)
+    {
+        <p>No hay productos con stock bajo.</p>
+    }
+    else
+    {
+        <button class="btn btn-success mb-3" @onclick="ExportarStock">  Exportar CSV </button>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in stockBajo)
+                {
+                    <tr>
+                        <td>@s.Nombre</td>
+                        <td>@s.StockActual</td>
+                        <td>@s.StockMinimo</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <hr />
+
+    <h5>Movimientos por fechas</h5>
+
+    <div class="row">
+        <div class="col">
+            <label>Desde</label>
+            <input class="form-control" type="date" @bind-value="desde" @bind-value:format="yyyy-MM-dd" />
+        </div>
+
+        <div class="col">
+            <label>Hasta</label>
+            <input class="form-control" type="date" @bind-value="hasta" @bind-value:format="yyyy-MM-dd" />
+        </div>
+        <div class="col d-flex align-items-end">
+            <button class="btn btn-primary" @onclick="CargarMovimientos">Buscar</button>
+        </div>
+    </div>
+
+    @if (movs is not null)
+    {
+        <p class="mt-3">
+            Total: <b>@movs.Total</b> (desde @movs.Desde.ToShortDateString() hasta @movs.Hasta.ToShortDateString())
+        </p>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Nota</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in movs.Items)
+                {
+                    <tr>
+                        <td>@m.Fecha</td>
+                        <td>@m.Tipo</td>
+                        <td>@m.Producto</td>
+                        <td>@m.Cantidad</td>
+                        <td>@m.Nota</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    bool cargando = true;
+
+    List<ApiService.StockBajoDto> stockBajo = new();
+    ApiService.MovimientosInformeDto? movs;
+
+    DateTime? desde;
+    DateTime? hasta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ok = await Api.TryLoadTokenAsync();
+        if (!ok) { Nav.NavigateTo("/login"); return; }
+
+        stockBajo = await Api.GetStockBajoAsync();
+        cargando = false;
+    }
+
+    async Task CargarMovimientos()
+    {
+        movs = await Api.GetMovimientosInformeAsync(desde, hasta);
+    }    
+
+    async Task ExportarStock()
+    {
+        var bytes = await Api.ExportStockBajoAsync();
+        if (bytes is null) return;
+
+        var base64 = Convert.ToBase64String(bytes);
+
+        await JS.InvokeVoidAsync(
+            "downloadFile",
+            $"stock_bajo_{DateTime.Now:yyyyMMddHHmmss}.csv",
+            base64
+        );
+    }
+}

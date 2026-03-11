@@ -1,0 +1,126 @@
+﻿@page "/categorias"
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3>Categorías</h3>
+
+@if (cargando)
+{
+    <p>Cargando...</p>
+}
+else if (role != "Admin")
+{
+    <div class="alert alert-warning">Solo Admin puede gestionar categorías.</div>
+}
+else
+{
+    <div class="mb-3">
+        <label>Nueva categoría</label>
+        <input class="form-control" @bind="nuevoNombre" />
+        <button class="btn btn-primary mt-2" @onclick="Crear">Crear</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(mensaje))
+    {
+        <div class="alert @(mensaje.Contains("Error") ? "alert-danger" : "alert-success")">
+            @mensaje
+        </div>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Activo</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in categorias)
+            {
+                <tr>
+                    <td>@c.IdCategoria</td>
+                    <td>
+                        <input class="form-control" value="@c.Nombre"
+                               @onchange="(e) => c.Nombre = e.Value?.ToString() ?? c.Nombre" />
+                    </td>
+                    <td>@c.Activo</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => Guardar(c)">
+                            Guardar
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Desactivar(c.IdCategoria)">
+                            Desactivar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    bool cargando = true;
+    string? role;
+
+    List<ApiService.CategoriaDto> categorias = new();
+    string nuevoNombre = "";
+    string? mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ok = await Api.TryLoadTokenAsync();
+        if (!ok) { Nav.NavigateTo("/login"); return; }
+
+        role = await Api.GetRoleAsync();
+        await Cargar();
+        cargando = false;
+    }
+
+    async Task Cargar()
+    {
+        categorias = await Api.GetCategoriasAsync();
+    }
+
+    async Task Crear()
+    {
+        mensaje = null;
+
+        if (string.IsNullOrWhiteSpace(nuevoNombre))
+        {
+            mensaje = "Error: nombre obligatorio";
+            return;
+        }
+
+        var ok = await Api.CrearCategoriaAsync(nuevoNombre);
+        mensaje = ok ? "Categoría creada ✅" : "Error creando categoría ❌";
+        nuevoNombre = "";
+
+        await Cargar();
+    }
+
+    async Task Guardar(ApiService.CategoriaDto c)
+    {
+        mensaje = null;
+
+        var ok = await Api.EditarCategoriaAsync(c.IdCategoria, c.Nombre, c.Activo);
+        mensaje = ok ? "Categoría actualizada ✅" : "Error actualizando categoría ❌";
+
+        await Cargar();
+    }
+
+    async Task Desactivar(int id)
+    {
+        mensaje = null;
+
+        var confirmar = await JS.InvokeAsync<bool>("confirm", "¿Seguro que quieres desactivar esta categoría?");
+        if (!confirmar) return;
+
+        var ok = await Api.DesactivarCategoriaAsync(id);
+        mensaje = ok ? "Categoría desactivada ✅" : "Error desactivando categoría ❌";
+
+        await Cargar();
+    }
+}

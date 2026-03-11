@@ -1,0 +1,141 @@
+﻿@page "/"
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3 class="dashboard-title">Dashboard general</h3>
+<p class="dashboard-subtitle">Resumen del estado actual del inventario y actividad reciente</p>
+
+@if (cargando)
+{
+    <div class="d-flex justify-content-center mt-4">
+        <div class="spinner-border text-primary"></div>
+    </div>
+}
+else if (data is null)
+{
+    <div class="alert alert-danger">No se pudo cargar el dashboard.</div>
+}
+else
+{
+    <div class="dashboard-grid">
+        <div class="kpi-card kpi-primary">
+            <div class="kpi-label">Productos activos</div>
+            <div class="kpi-value">@data.TotalProductos</div>
+            <div class="kpi-icon">📦</div>
+        </div>
+
+        <div class="kpi-card kpi-warning">
+            <div class="kpi-label">Stock bajo</div>
+            <div class="kpi-value">@data.StockBajo</div>
+            <div class="kpi-icon">⚠️</div>
+        </div>
+
+        <div class="kpi-card kpi-info">
+            <div class="kpi-label">Órdenes en borrador</div>
+            <div class="kpi-value">@data.OrdenesBorrador</div>
+            <div class="kpi-icon">📝</div>
+        </div>
+
+        <div class="kpi-card kpi-success">
+            <div class="kpi-label">Órdenes enviadas</div>
+            <div class="kpi-value">@data.OrdenesEnviadas</div>
+            <div class="kpi-icon">🚚</div>
+        </div>
+
+        <div class="kpi-card kpi-dark">
+            <div class="kpi-label">Movimientos (7 días)</div>
+            <div class="kpi-value">@data.Movimientos7d</div>
+            <div class="kpi-icon">📈</div>
+        </div>
+    </div>
+
+    <div class="dashboard-charts-header mt-4">
+        <div>
+            <h5 class="mb-1">Analítica de movimientos</h5>
+            <p class="text-muted mb-0">Comparativa de entradas, salidas y top de productos</p>
+        </div>
+
+        <div class="dashboard-filter">
+            <select class="form-select" @bind="days" @bind:after="CargarGraficas">
+                <option value="7">Últimos 7 días</option>
+                <option value="30">Últimos 30 días</option>
+                <option value="90">Últimos 90 días</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-lg-8">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div>
+                        <h6 class="mb-1">Entradas vs Salidas</h6>
+                        <small class="text-muted">Vista diaria de movimientos</small>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartMovs"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div>
+                        <h6 class="mb-1">Top productos</h6>
+                        <small class="text-muted">Más salidas registradas</small>
+                    </div>
+                </div>
+                <div class="chart-wrapper chart-wrapper-small">
+                    <canvas id="chartTopSalidas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    bool cargando = true;
+
+    ApiService.DashboardDto? data;
+
+    int days = 30;
+    ApiService.DashboardChartsDto? charts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ok = await Api.TryLoadTokenAsync();
+        if (!ok) { Nav.NavigateTo("/login"); return; }
+
+        data = await Api.GetDashboardAsync();
+        await CargarGraficas();
+
+        cargando = false;
+    }
+
+    async Task CargarGraficas()
+    {
+        charts = await Api.GetDashboardChartsAsync(days);
+        if (charts is null) return;
+
+        var labels = charts.MovimientosPorDia.Select(x => x.Dia.ToString("dd/MM")).ToArray();
+        var entradas = charts.MovimientosPorDia.Select(x => (double)x.Entradas).ToArray();
+        var salidas = charts.MovimientosPorDia.Select(x => (double)x.Salidas).ToArray();
+
+        var topLabels = charts.TopSalidas.Select(x => x.Nombre).ToArray();
+        var topValues = charts.TopSalidas.Select(x => (double)x.Total).ToArray();
+
+        await JS.InvokeVoidAsync(
+            "inventoryCharts.renderBar2",
+            "chartMovs",
+            labels,
+            entradas,
+            salidas,
+            "Entradas",
+            "Salidas"
+        );
+
+        await JS.InvokeVoidAsync("inventoryCharts.renderDoughnut", "chartTopSalidas", topLabels, topValues);
+    }
+}

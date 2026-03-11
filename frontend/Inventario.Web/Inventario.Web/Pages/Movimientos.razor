@@ -1,0 +1,84 @@
+﻿@page "/movimientos"
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+
+<h3>Registrar movimiento</h3>
+
+@if (cargando)
+{
+    <p>Cargando productos...</p>
+}
+else
+{
+    <div class="mb-3">
+        <label>Producto</label>
+        <select class="form-select" @bind="idProducto">
+            @foreach (var p in productos)
+            {
+                <option value="@p.IdProducto">@p.Nombre</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label>Tipo</label>
+        <select class="form-select" @bind="tipo">
+            <option value="ENTRADA">ENTRADA</option>
+            <option value="SALIDA">SALIDA</option>
+            <option value="AJUSTE">AJUSTE</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label>Cantidad</label>
+        <input class="form-control" type="number" @bind="cantidad" min="1" />
+    </div>
+
+    <div class="mb-3">
+        <label>Nota (opcional)</label>
+        <input class="form-control" @bind="nota" />
+    </div>
+
+    <button class="btn btn-primary" @onclick="Guardar">Guardar</button>
+
+    @if (!string.IsNullOrWhiteSpace(mensaje))
+    {
+        <div class="alert @(mensaje.StartsWith("Error") ? "alert-danger" : "alert-success") mt-3">
+            @mensaje
+        </div>
+    }
+
+}
+
+@code {
+    bool cargando = true;
+
+    List<ApiService.ProductoSimpleDto> productos = new();
+    int idProducto;
+    string tipo = "ENTRADA";
+    int cantidad = 1;
+    string? nota;
+    string? mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ok = await Api.TryLoadTokenAsync();
+        if (!ok)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        productos = await Api.GetProductosSimpleAsync();
+        if (productos.Count > 0) idProducto = productos[0].IdProducto;
+
+        cargando = false;
+    }
+
+    private async Task Guardar()
+    {
+        mensaje = null;
+        var result = await Api.RegistrarMovimientoAsync(idProducto, tipo, cantidad, nota);
+        mensaje = result.Success ? "Movimiento registrado ✅" : $"Error: {result.Error}";        
+    }
+}

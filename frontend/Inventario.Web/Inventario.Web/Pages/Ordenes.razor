@@ -1,0 +1,97 @@
+﻿@page "/ordenes"
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+
+<h3>Órdenes de compra</h3>
+
+<div class="mb-3">
+    <label>Proveedor (opcional)</label>
+    <input class="form-control" @bind="proveedor" />
+</div>
+<button class="btn btn-primary" @onclick="Crear">Crear orden</button>
+
+@if (!string.IsNullOrWhiteSpace(mensaje))
+{
+    <p class="mt-2">@mensaje</p>
+}
+
+<hr />
+
+@if (cargando)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Proveedor</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in ordenes)
+            {
+                <tr>
+                    <td>@o.IdOrden</td>
+                    <td>@o.Fecha</td>
+                    <td>
+                    <span class="status-badge
+                        @(o.Estado == "BORRADOR" ? "status-draft" :
+                          o.Estado == "ENVIADA" ? "status-sent" :
+                          o.Estado == "RECIBIDA" ? "status-received" :
+                          "status-cancelled")">
+                        @o.Estado </span>
+                    </td>
+                    <td>@o.Proveedor</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => IrDetalle(o.IdOrden)">
+                            Ver
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="page-subtitle">Gestiona órdenes de compra y recepciones de mercancía.</p>
+}
+
+@code {
+    bool cargando = true;
+    List<ApiService.OrdenDto> ordenes = new();
+
+    string? proveedor;
+    string? mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ok = await Api.TryLoadTokenAsync();
+        if (!ok) { Nav.NavigateTo("/login"); return; }
+
+        await Cargar();
+    }
+
+    async Task Cargar()
+    {
+        cargando = true;
+        ordenes = await Api.GetOrdenesAsync();
+        cargando = false;
+    }
+
+    async Task Crear()
+    {
+        mensaje = null;
+        var created = await Api.CrearOrdenAsync(proveedor);
+        if (created is null) { mensaje = "No se pudo crear la orden"; return; }
+
+        proveedor = null;
+        await Cargar();
+        mensaje = $"Orden #{created.IdOrden} creada ✅";
+    }
+
+    void IrDetalle(int id) => Nav.NavigateTo($"/ordenes/{id}");
+}

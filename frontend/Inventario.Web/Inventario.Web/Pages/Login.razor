@@ -1,0 +1,47 @@
+﻿@page "/login"
+@using Inventario.Web.Models
+@inject Inventario.Web.Services.ApiService Api
+@inject NavigationManager Nav
+
+<h3>Login</h3>
+
+<EditForm Model="model" OnValidSubmit="DoLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Email</label>
+        <InputText class="form-control" @bind-Value="model.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label>Contraseña</label>
+        <InputText type="password" class="form-control" @bind-Value="model.Password" />
+    </div>
+
+    <button class="btn btn-primary">Entrar</button>
+</EditForm>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <p class="text-danger mt-3">@error</p>
+}
+
+@code {
+    LoginModel model = new();
+    string? error;
+
+    async Task DoLogin()
+    {
+        error = null;
+
+        var result = await Api.Login(model.Email, model.Password);
+
+        if (result == null)
+        {
+            error = "Credenciales incorrectas";
+            return;
+        }
+        Nav.NavigateTo("/", true);
+    }
+}
