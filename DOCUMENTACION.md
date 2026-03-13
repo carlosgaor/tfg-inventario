@@ -142,79 +142,32 @@ Base de datos:
 
 # Casos de prueba
 
-A continuación se muestran algunos casos de prueba realizados para verificar el correcto funcionamiento del sistema.
-
----
-
-## Caso de prueba 1
-
-Funcionalidad: Inicio de sesión
-
-Entrada:
-Email y contraseña válidos
-
-Resultado esperado:
-El sistema autentica al usuario y permite acceder al dashboard.
-
-Resultado obtenido:
-Correcto.
-
----
-
-## Caso de prueba 2
-
-Funcionalidad: Crear producto
-
-Entrada:
-Datos válidos de producto
-
-Resultado esperado:
-El producto se guarda correctamente en la base de datos.
-
-Resultado obtenido:
-Correcto.
-
----
-
-## Caso de prueba 3
-
-Funcionalidad: Registrar movimiento de stock
-
-Entrada:
-Producto existente y cantidad válida
-
-Resultado esperado:
-Se registra el movimiento y se actualiza el stock.
-
-Resultado obtenido:
-Correcto.
-
----
-
-## Caso de prueba 4
-
-Funcionalidad: Crear usuario
-
-Entrada:
-Datos válidos de usuario
-
-Resultado esperado:
-El usuario se crea correctamente y se asigna el rol correspondiente.
-
-Resultado obtenido:
-Correcto.
-
----
-
-## Caso de prueba 5
-
-Funcionalidad: Generar informe de stock bajo
-
-Entrada:
-Consulta de productos con stock menor al mínimo
-
-Resultado esperado:
-Se muestran los productos que necesitan reposición.
-
-Resultado obtenido:
-Correcto.
+| ID | Funcionalidad | Descripción | Entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------|-------------|---------|--------------------|--------------------|--------|
+| CP-01 | Login | Inicio de sesión con usuario administrador | admin@inventario.local / Admin123! | Acceso correcto al dashboard | Acceso correcto | ✅ |
+| CP-02 | Login | Inicio de sesión con credenciales incorrectas | admin@inventario.local / contraseña incorrecta | Mostrar error de credenciales | Error mostrado correctamente | ✅ |
+| CP-03 | Login | Inicio de sesión con usuario empleado | empleado@inventario.local / Empleado123! | Acceso correcto con permisos limitados | Acceso correcto | ✅ |
+| CP-04 | Productos | Crear un nuevo producto | Nombre, categoría, código y stock mínimo válidos | Producto creado en base de datos | Producto creado correctamente | ✅ |
+| CP-05 | Productos | Editar producto existente | Cambiar nombre o stock mínimo | Producto actualizado | Producto actualizado correctamente | ✅ |
+| CP-06 | Productos | Desactivar producto | Seleccionar producto y pulsar desactivar | Producto marcado como inactivo | Producto desactivado correctamente | ✅ |
+| CP-07 | Productos | Filtrar productos por nombre | Texto parcial del nombre | Mostrar solo productos coincidentes | Filtrado correcto | ✅ |
+| CP-08 | Categorías | Crear una categoría | Nombre válido | Categoría creada correctamente | Categoría creada correctamente | ✅ |
+| CP-09 | Categorías | Editar categoría | Modificar nombre | Categoría actualizada | Categoría actualizada correctamente | ✅ |
+| CP-10 | Categorías | Desactivar categoría | Seleccionar categoría | Categoría marcada como inactiva | Categoría desactivada correctamente | ✅ |
+| CP-11 | Movimientos | Registrar entrada de stock | Producto válido, cantidad positiva | Se incrementa el stock | Movimiento registrado y stock actualizado | ✅ |
+| CP-12 | Movimientos | Registrar salida de stock válida | Producto con stock suficiente | Se reduce el stock | Movimiento registrado correctamente | ✅ |
+| CP-13 | Movimientos | Registrar salida con stock insuficiente | Cantidad superior al stock disponible | Mostrar error y no actualizar stock | Error mostrado correctamente | ✅ |
+| CP-14 | Movimientos | Registrar ajuste de stock | Producto válido y nueva cantidad | Stock ajustado correctamente | Ajuste realizado correctamente | ✅ |
+| CP-15 | Órdenes | Crear orden de compra | Proveedor válido | Orden creada en estado BORRADOR | Orden creada correctamente | ✅ |
+| CP-16 | Órdenes | Añadir línea a la orden | Producto y cantidad válidos | Línea añadida a la orden | Línea añadida correctamente | ✅ |
+| CP-17 | Órdenes | Cambiar estado de orden | BORRADOR → ENVIADA | Estado actualizado | Estado actualizado correctamente | ✅ |
+| CP-18 | Órdenes | Recibir orden | Orden en estado ENVIADA | Se actualiza stock y estado pasa a RECIBIDA | Recepción realizada correctamente | ✅ |
+| CP-19 | Informes | Consultar productos con stock bajo | Acceso al informe | Mostrar productos con stock inferior al mínimo | Informe generado correctamente | ✅ |
+| CP-20 | Informes | Consultar movimientos por fechas | Selección de rango de fechas | Mostrar movimientos del periodo | Consulta correcta | ✅ |
+| CP-21 | Informes | Exportar CSV de stock bajo | Pulsar botón exportar | Descarga de archivo CSV | Exportación correcta | ✅ |
+| CP-22 | Usuarios | Crear nuevo usuario | Nombre, email, contraseña y rol válidos | Usuario creado correctamente | Usuario creado correctamente | ✅ |
+| CP-23 | Usuarios | Cambiar rol de usuario | Usuario existente y nuevo rol | Rol actualizado correctamente | Rol actualizado correctamente | ✅ |
+| CP-24 | Usuarios | Activar o desactivar usuario | Usuario seleccionado | Cambio de estado correcto | Estado actualizado correctamente | ✅ |
+| CP-25 | Usuarios | Resetear contraseña | Nueva contraseña válida | Contraseña actualizada | Contraseña actualizada correctamente | ✅ |
+| CP-26 | Dashboard | Cargar KPIs | Acceso al dashboard | Mostrar métricas del sistema | KPIs mostrados correctamente | ✅ |
+| CP-27 | Dashboard | Mostrar gráficas analíticas | Selección de rango temporal | Mostrar gráficas actualizadas | Gráficas cargadas correctamente | ✅ |
