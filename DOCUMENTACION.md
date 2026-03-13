@@ -7,7 +7,7 @@
 
 ## Alumno
 
-Carlos [Apellidos]
+Carlos García Ortega
 
 ---
 
@@ -145,9 +145,9 @@ Base de datos:
 | ID | Funcionalidad | Descripción | Entrada | Resultado esperado | Resultado obtenido | Estado |
 |----|---------------|-------------|---------|--------------------|--------------------|--------|
 | CP-01 | Login | Inicio de sesión con usuario administrador | admin@inventario.local / Admin123! | Acceso correcto al dashboard | Acceso correcto | Aceptado |
-| CP-02 | Login | Inicio de sesión con credenciales incorrectas | admin@inventario.local / contraseña incorrecta | Mostrar error de credenciales | Error mostrado correctamente | ✅ |
+| CP-02 | Login | Inicio de sesión con credenciales incorrectas | admin@inventario.local / contraseña incorrecta | Mostrar error de credenciales | Error mostrado correctamente | Aceptado |
 | CP-03 | Login | Inicio de sesión con usuario empleado | empleado@inventario.local / Empleado123! | Acceso correcto con permisos limitados | Acceso correcto | Aceptado |
-| CP-04 | Productos | Crear un nuevo producto | Nombre, categoría, código y stock mínimo válidos | Producto creado en base de datos | Producto creado correctamente | ✅ |
+| CP-04 | Productos | Crear un nuevo producto | Nombre, categoría, código y stock mínimo válidos | Producto creado en base de datos | Producto creado correctamente | Aceptado |
 | CP-05 | Productos | Editar producto existente | Cambiar nombre o stock mínimo | Producto actualizado | Producto actualizado correctamente | Aceptado |
 | CP-06 | Productos | Desactivar producto | Seleccionar producto y pulsar desactivar | Producto marcado como inactivo | Producto desactivado correctamente | Aceptado |
 | CP-07 | Productos | Filtrar productos por nombre | Texto parcial del nombre | Mostrar solo productos coincidentes | Filtrado correcto | Aceptado |
