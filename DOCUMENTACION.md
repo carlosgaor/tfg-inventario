@@ -80,7 +80,7 @@ Clases principales del sistema:
 Este diagrama permite visualizar la estructura del modelo de datos utilizado en el backend.
 
 
-![Diagrama de clases](imagenes/clases.png)
+![Diagrama de clases](imagenes/diagrama_clases.png)
 
 ---
 
