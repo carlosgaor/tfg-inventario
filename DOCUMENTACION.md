@@ -58,7 +58,7 @@ Casos de uso principales:
 - Consultar informes
 - Gestionar usuarios
 
-*(Aquí puedes insertar el diagrama generado previamente)*
+![Diagrama de casos de uso](imagenes/diagrama_casosUso.png)
 
 ---
 
