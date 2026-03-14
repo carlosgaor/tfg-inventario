@@ -79,7 +79,8 @@ Clases principales del sistema:
 
 Este diagrama permite visualizar la estructura del modelo de datos utilizado en el backend.
 
-*(Aquí puedes insertar el diagrama de clases que ya hicimos anteriormente)*
+
+![Diagrama de clases](imagenes/clases.png)
 
 ---
 
@@ -105,7 +106,7 @@ Relaciones principales:
 - Un movimiento de stock está asociado a un producto
 - Una orden de compra puede contener varias líneas de pedido
 
-*(Aquí puedes insertar el diagrama ER de la base de datos)*
+![Diagrama Entidad-Realación](imagenes/diagrama-entidad-relacion.png)
 
 ---
 
@@ -136,7 +137,7 @@ Base de datos:
 - Procedimientos almacenados
 - Triggers de integridad
 
-*(Aquí puedes insertar el diagrama de arquitectura que ya hicimos)*
+![Diagrama componentes](imagenes/diagrama_componentes.png)
 
 ---
 
