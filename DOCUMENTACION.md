@@ -1,6 +1,6 @@
 # 📦 Sistema de Gestión de Inventario
 
-## Proyecto de Fin de Grado  
+## TFG
 ### Desarrollo de Aplicaciones Multiplataforma (DAM)
 
 ---
@@ -30,17 +30,17 @@ Sistema de Gestión de Inventario para Pequeñas Empresas
 
 # Introducción
 
-El presente documento describe la arquitectura y diseño del sistema desarrollado como Trabajo de Fin de Grado del ciclo formativo de Desarrollo de Aplicaciones Multiplataforma.
+En este documento describiremos la arquitectura y diseño del sistema
 
-El sistema permite gestionar el inventario de una empresa mediante una aplicación web que incluye funcionalidades de control de stock, gestión de productos, órdenes de compra, usuarios e informes.
+El sistema permite gestionar el inventario de una empresa mediante una aplicación web que incluye funciones de control de stock, gestión de productos, órdenes de compra, usuarios e informes
 
-La aplicación está basada en una arquitectura cliente-servidor donde un frontend desarrollado con Blazor WebAssembly se comunica con un backend implementado en ASP.NET Core Web API, el cual gestiona la lógica de negocio y el acceso a una base de datos MySQL.
+La aplicación está basada en una arquitectura cliente-servidor donde un frontend desarrollado con Blazor WebAssembly se comunica con un backend implementado en ASP.NET Core Web API, el cual gestiona la lógica de negocio y el acceso a una base de datos MySQL
 
 ---
 
 # Diagrama de casos de uso
 
-El siguiente diagrama representa las principales interacciones entre los actores del sistema y las funcionalidades disponibles.
+Aquí representaremos las principales interacciones entre los actores del sistema y las funcionalidades disponibles
 
 Actores principales:
 
